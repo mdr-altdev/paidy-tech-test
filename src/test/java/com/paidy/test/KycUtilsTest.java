@@ -2,10 +2,14 @@ package com.paidy.test;
 
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
+
+import com.paidy.test.exceptions.InvalidDateException;
 import com.paidy.test.exceptions.NegativeIntegerException;
+import com.paidy.test.exceptions.NegativeTimePeriodException;
 
 /**
- * Unit test for simple App.
+ * Unit tests for the Paidy KYC utils test class
+ * All functions are static, so no need for concurrency tests
  */
 public class KycUtilsTest {
     /**
@@ -49,5 +53,46 @@ public class KycUtilsTest {
     @Test(expected = NegativeIntegerException.class)
     public void testInvalidNumOrdinalSuffix() throws NegativeIntegerException {
         KycUtils.appendOrdinalSuffix(-1);
+    }
+
+    /**
+     * Nominal tests for the Sunday calculator
+     */
+    @Test
+    public void testCalculateSundays() throws NegativeTimePeriodException, InvalidDateException {
+        assertTrue(KycUtils.calculateSundays("01-05-2021", "30-05-2021") == 5);
+        assertTrue(KycUtils.calculateSundays("01-05-2021", "01-05-2021") == 0);
+        assertTrue(KycUtils.calculateSundays("02-05-2021", "02-05-2021") == 1);
+        assertTrue(KycUtils.calculateSundays("01-01-2022", "10-06-2022") == 23);
+
+        // Long period including a leap year
+        assertTrue(KycUtils.calculateSundays("01-01-2023", "31-12-2025") == 157);
+
+        // Edge case value fetched from Excel,
+        assertTrue(KycUtils.calculateSundays("01-01-1970", "01-01-2100") == 6783);
+    }
+
+    /**
+     * Error case for the Sunday calculator: invalid date format 1
+     */
+    @Test(expected = InvalidDateException.class)
+    public void testCalculateSundaysInvalidDateErr1() throws NegativeTimePeriodException, InvalidDateException {
+        KycUtils.calculateSundays("Invalid date string", "30-05-2021");
+    }
+
+    /**
+     * Error case for the Sunday calculator: invalid date format 2
+     */
+    @Test(expected = InvalidDateException.class)
+    public void testCalculateSundaysInvalidDateErr2() throws NegativeTimePeriodException, InvalidDateException {
+        KycUtils.calculateSundays("2021-05-01", "30-05-2021");
+    }
+
+    /**
+     * Error case for the Sunday calculator: start date > end date
+     */
+    @Test(expected = NegativeTimePeriodException.class)
+    public void testCalculateSundaysInvalidDateErr3() throws NegativeTimePeriodException, InvalidDateException {
+        KycUtils.calculateSundays("30-05-2021", "01-05-2021");
     }
 }
